@@ -61,7 +61,7 @@ class ResetButton(QPushButton):
         
 class StopAllMotorsButton(QPushButton):
     def __init__(self):
-        super().__init__(text="Stop Motors")
+        super().__init__(text="Stop All Motors")
         self.clicked.connect(self.OnClick)
         
         self.setStyleSheet("""
@@ -91,6 +91,7 @@ class RCMotorControls(QWidget):
         
         layout = QVBoxLayout()
         btn = UpdateButton()
+        reset_btn = ResetButton()
         
         # Page title
         title = QLabel("RC Motor Controls")
@@ -99,14 +100,27 @@ class RCMotorControls(QWidget):
         
         # (From Lab) RC servo motor: Move the motor to either of its extreme limit positions and to any position (in degrees) in between. If you choose to use a continuous rotation RC servo, be able to move the motor at any desired velocity (in RPM, rev/sec, degrees/sec, etc.) within the achievable range in either direction.
         
-        graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
-        graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #000000")
-        graph_placeholder.setMinimumSize(400, 250)
+        # Layout for CONTROLS
+        controls = QVBoxLayout()
+        
+        ###### ANGLE SELECT ######
+        angle_select_lbl = QLabel("Select Angle (-360° to 360°)")
+        angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        angle_select_lbl.setMinimumWidth(400) # keep this constant for all
+        
+        angle_input = QLineEdit()
+        validator = QIntValidator(-360, 360)  # Min 0, Max 360
+        angle_input.setValidator(validator)
+        angle_input.setPlaceholderText("Enter angle in degrees")
+        
+        # fill controls
+        controls.addWidget(angle_select_lbl)
+        controls.addWidget(angle_input)
         
         layout.addWidget(title)
-        layout.addWidget(graph_placeholder)
+        layout.addLayout(controls)
         layout.addWidget(btn)
+        layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -117,6 +131,7 @@ class DCMotorControls(QWidget):
         
         layout = QVBoxLayout()
         btn = UpdateButton()
+        reset_btn = ResetButton()
         
         # Page title
         title = QLabel("DC Motor Controls")
@@ -124,14 +139,28 @@ class DCMotorControls(QWidget):
         title.setStyleSheet("font-size: 20px;")
         
         # DC motor: Using an encoder for position feedback and PID control, move the motor a user-selectable a) number of degrees from an initial position and b) desired velocity in either direction.
-        graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
-        graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #ffe6e6;")
-        graph_placeholder.setMinimumSize(400, 250)
+        
+        # Layout for CONTROLS
+        controls = QVBoxLayout()
+        
+        ###### ANGLE SELECT ######
+        angle_select_lbl = QLabel("Select Angle (-360° to 360°)")
+        angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        angle_select_lbl.setMinimumWidth(400) # keep this constant for all
+        
+        angle_input = QLineEdit()
+        validator = QIntValidator(-360, 360)  # Min 0, Max 360
+        angle_input.setValidator(validator)
+        angle_input.setPlaceholderText("Enter angle in degrees")
+        
+        # fill controls
+        controls.addWidget(angle_select_lbl)
+        controls.addWidget(angle_input)
         
         layout.addWidget(title)
-        layout.addWidget(graph_placeholder)
+        layout.addLayout(controls)
         layout.addWidget(btn)
+        layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -155,16 +184,15 @@ class StepperControls(QWidget):
         controls = QVBoxLayout()
         
         ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("Select Angle (0° to 360°)")
+        angle_select_lbl = QLabel("Select Angle (-360° to 360°)")
         angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         angle_select_lbl.setMinimumWidth(400) # keep this constant for all
         
         angle_input = QLineEdit()
-        validator = QIntValidator(0, 360)  # Min 0, Max 360
+        validator = QIntValidator(-360, 360)  # Min 0, Max 360
         angle_input.setValidator(validator)
         angle_input.setPlaceholderText("Enter angle in degrees")
         
-
         # fill controls
         controls.addWidget(angle_select_lbl)
         controls.addWidget(angle_input)

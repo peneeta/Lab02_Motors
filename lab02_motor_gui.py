@@ -5,40 +5,26 @@ import sys
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
 
-# TODO Update for motors lab
-
 # arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=9600, timeout=0.05)
 
-# design the sidebar to pick sensors
-class Sidebar(QWidget):
+class UpdateButton(QPushButton):
     def __init__(self):
-        super().__init__()
+        super().__init__(text="Update Motor")
+        self.clicked.connect(self.OnClick)
+    
         
-        # use vbox for stacked buttons
-        layout = QVBoxLayout()
+    def OnClick(self):
         
-        # define buttons
-        self.s1_btn = QPushButton("Sensor X Data")
-        self.s2_btn = QPushButton("Sensor Y Data")
-        self.s3_btn = QPushButton("Sensor Z Data")
-        
-        # put in a list
-        self.btns = [self.s1_btn, self.s2_btn, self.s3_btn]
-        
-        # add buttons to button layout
-        layout.addWidget(self.s1_btn)
-        layout.addWidget(self.s2_btn)
-        layout.addWidget(self.s3_btn)
-        layout.addStretch() # ensure buttons are at the top
-        
-        self.setLayout(layout)
-        self.setFixedWidth(180) # fixed width sidebar
+        # TODO send to corresponding motor
+        print('Button clicked!')
+
 
 class RCMotorControls(QWidget):
     def __init__(self):
         super().__init__()
         
         layout = QVBoxLayout()
+        btn = UpdateButton()
         
         # Page title
         title = QLabel("RC Motor Controls")
@@ -48,11 +34,12 @@ class RCMotorControls(QWidget):
         # Graph placeholder
         graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
         graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #ffe6e6;")
+        graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #000000")
         graph_placeholder.setMinimumSize(400, 250)
         
         layout.addWidget(title)
         layout.addWidget(graph_placeholder)
+        layout.addWidget(btn)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -62,6 +49,7 @@ class DCMotorControls(QWidget):
         super().__init__()
         
         layout = QVBoxLayout()
+        btn = UpdateButton()
         
         # Page title
         title = QLabel("DC Motor Controls")
@@ -76,6 +64,7 @@ class DCMotorControls(QWidget):
         
         layout.addWidget(title)
         layout.addWidget(graph_placeholder)
+        layout.addWidget(btn)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -85,6 +74,7 @@ class StepperControls(QWidget):
         super().__init__()
         
         layout = QVBoxLayout()
+        btn = UpdateButton()
         
         # Page title
         title = QLabel("Stepper Motor Controls")
@@ -99,6 +89,7 @@ class StepperControls(QWidget):
         
         layout.addWidget(title)
         layout.addWidget(graph_placeholder)
+        layout.addWidget(btn)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -161,7 +152,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = MainInterface()
-    window.show() # windows hdiden by default
+    window.show()
 
     app.exec()
 

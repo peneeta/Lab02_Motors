@@ -1,6 +1,7 @@
 import serial
 from PyQt6.QtCore import Qt, QSize, QTimer
-from PyQt6.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget
+from PyQt6.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
+from PyQt6.QtGui import QIntValidator
 import sys
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
@@ -16,7 +17,7 @@ class UpdateButton(QPushButton):
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
-                border: none;
+                border: 1px solid white;
                 padding: 10px 20px;
                 font-size: 16px;
                 border-radius: 5px;
@@ -31,6 +32,32 @@ class UpdateButton(QPushButton):
         
         # TODO send to corresponding motor
         print('Button clicked!')
+
+class ResetButton(QPushButton):
+    def __init__(self):
+        super().__init__(text="Reset Motor")
+        self.clicked.connect(self.OnClick)
+        
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #292929;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #171717;
+            }
+        """)
+    
+        
+    def OnClick(self):
+        
+        # TODO send to corresponding motor
+        print('Reset!')
+  
         
 class StopAllMotorsButton(QPushButton):
     def __init__(self):
@@ -70,7 +97,8 @@ class RCMotorControls(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignLeft)
         title.setStyleSheet("font-size: 20px;")
         
-        # Graph placeholder
+        # (From Lab) RC servo motor: Move the motor to either of its extreme limit positions and to any position (in degrees) in between. If you choose to use a continuous rotation RC servo, be able to move the motor at any desired velocity (in RPM, rev/sec, degrees/sec, etc.) within the achievable range in either direction.
+        
         graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
         graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
         graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #000000")
@@ -95,7 +123,7 @@ class DCMotorControls(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignLeft)
         title.setStyleSheet("font-size: 20px;")
         
-        # Graph placeholder
+        # DC motor: Using an encoder for position feedback and PID control, move the motor a user-selectable a) number of degrees from an initial position and b) desired velocity in either direction.
         graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
         graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
         graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #ffe6e6;")
@@ -114,21 +142,37 @@ class StepperControls(QWidget):
         
         layout = QVBoxLayout()
         btn = UpdateButton()
+        reset_btn = ResetButton()
         
         # Page title
         title = QLabel("Stepper Motor Controls")
         title.setAlignment(Qt.AlignmentFlag.AlignLeft)
         title.setStyleSheet("font-size: 20px;")
         
-        # Graph placeholder
-        graph_placeholder = QLabel("fhdsjkfhjdskhfjdsk")
-        graph_placeholder.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        graph_placeholder.setStyleSheet("border: 2px dashed gray; background-color: #ffe6e6;")
-        graph_placeholder.setMinimumSize(400, 250)
+        # Stepper motor: Move the motor a user-selectable number of degrees from an initial position in either direction.
+        
+        # Layout for CONTROLS
+        controls = QVBoxLayout()
+        
+        ###### ANGLE SELECT ######
+        angle_select_lbl = QLabel("Select Angle (0° to 360°)")
+        angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        angle_select_lbl.setMinimumWidth(400) # keep this constant for all
+        
+        angle_input = QLineEdit()
+        validator = QIntValidator(0, 360)  # Min 0, Max 360
+        angle_input.setValidator(validator)
+        angle_input.setPlaceholderText("Enter angle in degrees")
+        
+
+        # fill controls
+        controls.addWidget(angle_select_lbl)
+        controls.addWidget(angle_input)
         
         layout.addWidget(title)
-        layout.addWidget(graph_placeholder)
+        layout.addLayout(controls)
         layout.addWidget(btn)
+        layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)

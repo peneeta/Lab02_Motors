@@ -6,10 +6,14 @@ import sys
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
 
+# TODO
+# fix the input widgets for all
+# maybe change the stepper to a spinbox
+
 # arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=9600, timeout=0.05)
 
 class UpdateButton(QPushButton):
-    def __init__(self):
+    def __init__(self, input_widgets = None):
         super().__init__(text="Update Motor")
         self.clicked.connect(self.OnClick)
         
@@ -26,10 +30,16 @@ class UpdateButton(QPushButton):
                 background-color: #45a049;
             }
         """)
+        
+        self.inputWidgets = input_widgets or []
     
         
     def OnClick(self):
-        
+        for widget in self.inputWidgets:
+            if isinstance(widget, QLineEdit):
+                value = widget.text()
+                print(f"Input value: {value}")
+                
         # TODO send to corresponding motor
         print('Button clicked!')
 
@@ -61,7 +71,7 @@ class ResetButton(QPushButton):
         
 class StopAllMotorsButton(QPushButton):
     def __init__(self):
-        super().__init__(text="Stop All Motors")
+        super().__init__(text="Stop and Reset Motors")
         self.clicked.connect(self.OnClick)
         
         self.setStyleSheet("""
@@ -72,7 +82,7 @@ class StopAllMotorsButton(QPushButton):
                 padding: 10px 20px;
                 font-size: 16px;
                 border-radius: 5px;
-                max-width: 100px;
+                max-width: 300px;
             }
             QPushButton:hover {
                 background-color: #99221a;
@@ -82,8 +92,9 @@ class StopAllMotorsButton(QPushButton):
         
     def OnClick(self):
         
-        # TODO send to corresponding motor
+        # TODO
         print('STOP!')
+
 
 class RCMotorControls(QWidget):
     def __init__(self):
@@ -144,18 +155,32 @@ class DCMotorControls(QWidget):
         controls = QVBoxLayout()
         
         ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("Select Angle (-360° to 360°)")
+        angle_select_lbl = QLabel("Select Angle (0° to 360°)")
         angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         angle_select_lbl.setMinimumWidth(400) # keep this constant for all
         
         angle_input = QLineEdit()
-        validator = QIntValidator(-360, 360)  # Min 0, Max 360
+        validator = QIntValidator(0, 360)  # Min 0, Max 360
         angle_input.setValidator(validator)
         angle_input.setPlaceholderText("Enter angle in degrees")
+        
+        
+        ###### SPEED SELECT ######
+        speed_select_lbl = QLabel("Select Speed (1-20 rpm)")
+        speed_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        speed_select_lbl.setMinimumWidth(400) # keep this constant for all
+        
+        speed_input = QLineEdit()
+        sp_validator = QIntValidator(1, 20)  # Min 0, Max 360
+        speed_input.setValidator(sp_validator)
+        speed_input.setPlaceholderText("Enter velocity in RPM")
         
         # fill controls
         controls.addWidget(angle_select_lbl)
         controls.addWidget(angle_input)
+        
+        controls.addWidget(speed_select_lbl)
+        controls.addWidget(speed_input)
         
         layout.addWidget(title)
         layout.addLayout(controls)
@@ -170,8 +195,6 @@ class StepperControls(QWidget):
         super().__init__()
         
         layout = QVBoxLayout()
-        btn = UpdateButton()
-        reset_btn = ResetButton()
         
         # Page title
         title = QLabel("Stepper Motor Controls")
@@ -197,6 +220,11 @@ class StepperControls(QWidget):
         controls.addWidget(angle_select_lbl)
         controls.addWidget(angle_input)
         
+        # add button functionality
+        btn = UpdateButton([angle_input])
+        reset_btn = ResetButton()
+        
+        # add all items to layout
         layout.addWidget(title)
         layout.addLayout(controls)
         layout.addWidget(btn)

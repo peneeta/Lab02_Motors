@@ -11,13 +11,52 @@ class UpdateButton(QPushButton):
     def __init__(self):
         super().__init__(text="Update Motor")
         self.clicked.connect(self.OnClick)
+        
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
     
         
     def OnClick(self):
         
         # TODO send to corresponding motor
         print('Button clicked!')
-
+        
+class StopAllMotorsButton(QPushButton):
+    def __init__(self):
+        super().__init__(text="Stop Motors")
+        self.clicked.connect(self.OnClick)
+        
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #eb4034;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+                max-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #99221a;
+            }
+        """)
+    
+        
+    def OnClick(self):
+        
+        # TODO send to corresponding motor
+        print('STOP!')
 
 class RCMotorControls(QWidget):
     def __init__(self):
@@ -101,24 +140,37 @@ class MainInterface(QMainWindow):
         super().__init__()
         
         # global gui things
-        self.setMinimumSize(QSize(800, 400))
+        self.setMinimumSize(QSize(800, 800))
         self.setWindowTitle("Lab 02 - Motors")
+        global_title = QLabel("Lab 2 Sensors (Group 7)")
+        global_title.setStyleSheet("font-size: 30px;")
         
         # define widgets
         self.rc_ctrl = RCMotorControls()
         self.dc_ctrl = DCMotorControls()
         self.stepper_ctrl = StepperControls()
         
-        # use hbox to put sidebar next to panels
-        central_widget = QWidget()
-        main_layout = QHBoxLayout()
+        # motor controls
+        motors_layout = QHBoxLayout()
         
         # set controllers
-        main_layout.addWidget(self.rc_ctrl)
-        main_layout.addWidget(self.dc_ctrl)
-        main_layout.addWidget(self.stepper_ctrl)
+        motors_layout.addWidget(self.rc_ctrl)
+        motors_layout.addWidget(self.dc_ctrl)
+        motors_layout.addWidget(self.stepper_ctrl)
+        
+        # define global controls
+        stop_btn = StopAllMotorsButton()
         
         # set central widget and layout
+        central_widget = QWidget()
+        main_layout = QVBoxLayout()
+        
+        main_layout.addWidget(global_title)
+        main_layout.addWidget(stop_btn)
+        
+        main_layout.addLayout(motors_layout)
+        main_layout.addStretch()
+        
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
         

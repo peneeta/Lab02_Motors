@@ -12,7 +12,8 @@ from motor_comm import UpdateRCServo
 # fix the input widgets for all
 # Display sensor reads on screen
 
-# arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=9600, timeout=0.05)
+BAUD_RATE = 9600
+arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=0.05)
 
 #### BUTTON CLASSES ####
 class UpdateButton(QPushButton):
@@ -352,7 +353,7 @@ class MainInterface(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
-    def GetSensorData(self):
+    def PollSensors(self):
         # string parsing to get sensor data
         try:
             line = arduino.readline().decode("utf-8", errors="ignore").strip()
@@ -364,11 +365,10 @@ class MainInterface(QMainWindow):
 
         # arduino outputs (distance,humidity,temperature,light)
         parts = [p.strip() for p in line.split(",")]
-        if len(parts) < 4:
-            return
 
-        distance, humidity, temperature, light = parts[0], parts[1], parts[2], parts[3]
-        self.rc_ctrl.UpdateValue(distance)
+        potent = parts[0]
+        self.rc_ctrl.UpdateValue(potent)
+        
         # self.dc_ctrl.UpdateValue(temperature, humidity)
         # self.stepper_ctrl.UpdateValue(light)
         

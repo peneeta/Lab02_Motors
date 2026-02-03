@@ -24,14 +24,18 @@ def UpdateStepper():
     pass
 
 # Reset Functions
-def RCServoReset():
+def ResetRCServo():
+    
+    print("Resetting RC Servo")
     angle = 0
     
     # rc_serial.write(f"{angle}\n".encode())
     pass
 
-def DCServoReset():
+def ResetDCMotor():
+    print("Resetting DC Motor")
     pass
 
-def StepperReset():
+def ResetStepper():
+    print("Resetting Stepper")
     pass

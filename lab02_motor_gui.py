@@ -7,16 +7,18 @@ import sys
 
 # motor specific functions
 from motor_comm import UpdateRCServo
+from motor_comm import ResetRCServo, ResetDCMotor, ResetStepper
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
 
 # TODO
 # need to pass the arduino in as an argument perhaps
+# need to do sensor toggle activities
 
 # GLOBALS
 BAUD_RATE = 9600
 TIMEOUT = 0.05
-arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
+# arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
 
 #### BUTTON CLASSES ####
 class UpdateButton(QPushButton):
@@ -88,20 +90,18 @@ class ResetButton(QPushButton):
         
         self.Reset = reset_fn
     
-        
-    def OnClick(self, Reset):
-
-        if Reset:
-            Reset()
-            
-        print('Reset!')
+    # call reset function on click
+    def OnClick(self):
+        if self.Reset:
+            self.Reset()
 
 class SensorToggle(AnimatedToggle):
     def __init__(self):
         super().__init__(checked_color="#FFB000",
             pulse_checked_color="#44FFB000")
         self.setFixedWidth(70)
-
+        
+    
 # extra line
 def AddSep():
     line = QFrame()
@@ -170,7 +170,13 @@ class RCMotorControls(QWidget):
         # add button functionality
         inputs_to_read = [angle_input]
         btn = UpdateButton(inputs_to_read, UpdateRCServo)
-        reset_btn = ResetButton()
+        reset_btn = ResetButton(ResetRCServo)
+        
+        # add toggle functionality
+        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
+        
+        # Initialize button state (disabled when toggle is OFF)
+        btn.setEnabled(True)
         
         layout.addWidget(title)
         
@@ -186,6 +192,43 @@ class RCMotorControls(QWidget):
         
     def UpdateValue(self, value):
         self.value_label.setText(f"Latest NNN: {value}")
+        
+    def ResetMotor(self):
+        pass
+        
+    def ToggleSensorControls(self, state, button):
+        """Handle toggle state changes"""
+        if state == Qt.CheckState.Checked:
+            print("ON")
+            button.setEnabled(False)  # Disable button when toggle is ON
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #A0A0A0;;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+        """)
+        else:
+            print("OFF")
+            button.setEnabled(True)   # Enable button when toggle is OFF
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+            # stop and reset the motor
+            ResetRCServo()
  
 class DCMotorControls(QWidget):
     # mrosnail 280 DC Motor
@@ -243,7 +286,13 @@ class DCMotorControls(QWidget):
         # add button functionality
         inputs_to_read = [speed_input]
         btn = UpdateButton(inputs_to_read)
-        reset_btn = ResetButton()
+        reset_btn = ResetButton(ResetDCMotor)
+        
+        # add toggle functionality
+        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
+        
+        # Initialize button state (disabled when toggle is OFF)
+        btn.setEnabled(True)
         
         layout.addWidget(title)
         
@@ -259,6 +308,40 @@ class DCMotorControls(QWidget):
     
     def UpdateValue(self, value):
         self.value_label.setText(f"Latest NNN: {value}")
+        
+    def ToggleSensorControls(self, state, button):
+        """Handle toggle state changes"""
+        if state == Qt.CheckState.Checked:
+            print("ON")
+            button.setEnabled(False)  # Disable button when toggle is ON
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #A0A0A0;;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+        """)
+        else:
+            print("OFF")
+            button.setEnabled(True)   # Enable button when toggle is OFF
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+            # stop and reset the motor
+            ResetDCMotor()
  
 class StepperControls(QWidget):
     # ROHS Step Motor
@@ -318,7 +401,13 @@ class StepperControls(QWidget):
         # add button functionality
         inputs = [angle_input]
         btn = UpdateButton(inputs)
-        reset_btn = ResetButton()
+        reset_btn = ResetButton(ResetStepper)
+        
+        # add toggle functionality
+        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
+        
+        # Initialize button state (disabled when toggle is OFF)
+        btn.setEnabled(True)
         
         # add all items to layout
         layout.addWidget(title)
@@ -335,6 +424,39 @@ class StepperControls(QWidget):
         
     def UpdateValue(self, value):
         self.value_label.setText(f"Latest NNN: {value}")
+        
+    def ToggleSensorControls(self, state, button):
+        """Handle toggle state changes"""
+        if state == Qt.CheckState.Checked:
+            print("ON")
+            button.setEnabled(False)  # Disable button when toggle is ON
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #A0A0A0;;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+        """)
+        else:
+            print("OFF")
+            button.setEnabled(True)   # Enable button when toggle is OFF
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: 1px solid white;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+            ResetStepper()
        
 # design the main window
 class MainInterface(QMainWindow):
@@ -375,29 +497,29 @@ class MainInterface(QMainWindow):
         # poll sensor readings
         self.serial_timer = QTimer(self)
         self.serial_timer.setInterval(50)
-        self.serial_timer.timeout.connect(self.PollSensors)
+        # self.serial_timer.timeout.connect(self.PollSensors)
         self.serial_timer.start()
 
-    def PollSensors(self):
-        # string parsing to get sensor data
-        try:
-            line = arduino.readline().decode("utf-8", errors="ignore").strip()
-        except serial.SerialException:
-            return
+    # def PollSensors(self):
+    #     # string parsing to get sensor data
+    #     try:
+    #         line = arduino.readline().decode("utf-8", errors="ignore").strip()
+    #     except serial.SerialException:
+    #         return
 
-        if not line:
-            return
+    #     if not line:
+    #         return
 
-        # arduino outputs (distance,humidity,temperature,light)
-        parts = [p.strip() for p in line.split(",")]
+    #     # arduino outputs (distance,humidity,temperature,light)
+    #     parts = [p.strip() for p in line.split(",")]
 
-        # parse the string
-        potent, light, dist = parts[0], parts[1], parts[2]
+    #     # parse the string
+    #     potent, light, dist = parts[0], parts[1], parts[2]
         
-        # update sensor values
-        self.rc_ctrl.UpdateValue(potent)
-        self.dc_ctrl.UpdateValue(light)
-        self.stepper_ctrl.UpdateValue(dist)
+    #     # update sensor values
+    #     self.rc_ctrl.UpdateValue(potent)
+    #     self.dc_ctrl.UpdateValue(light)
+    #     self.stepper_ctrl.UpdateValue(dist)
         
 # run the app
 if __name__ == "__main__":

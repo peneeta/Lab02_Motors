@@ -4,16 +4,19 @@ from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVB
 from qtwidgets import AnimatedToggle
 from PyQt5.QtGui import QIntValidator
 import sys
+
+# motor specific functions
 from motor_comm import UpdateRCServo
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
 
 # TODO
-# fix the input widgets for all
-# Display sensor reads on screen
+# need to pass the arduino in as an argument perhaps
 
+# GLOBALS
 BAUD_RATE = 9600
-arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=0.05)
+TIMEOUT = 0.05
+arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
 
 #### BUTTON CLASSES ####
 class UpdateButton(QPushButton):
@@ -43,6 +46,7 @@ class UpdateButton(QPushButton):
         """)
         
         self.inputWidgets = input_widgets or []
+        self.send_to_motor_fn = send_to_motor_fn
     
     def OnClick(self):
         update_values = []
@@ -51,18 +55,20 @@ class UpdateButton(QPushButton):
         for widget in self.inputWidgets:
             value = widget.text()
             
-            # TODO: if text is none, err handling
-            
             # remove special chars from value
             print(f"Input value: {value}")
             update_values.append(value)
-                
-        # TODO send to corresponding motor
-        # TODO check if input is empty - use previous value or no change
+        
+        # send to corresponding motor
+        if self.send_to_motor_fn:
+            self.send_to_motor_fn(update_values)
+
         return update_values
 
 class ResetButton(QPushButton):
-    def __init__(self):
+    def __init__(self, reset_fn = None):
+        # define a reset function per motor to make things easier (see motor_comm.py)
+        
         super().__init__(text="Reset Motor")
         self.clicked.connect(self.OnClick)
         
@@ -79,11 +85,15 @@ class ResetButton(QPushButton):
                 background-color: #171717;
             }
         """)
+        
+        self.Reset = reset_fn
     
         
-    def OnClick(self):
-        
-        # TODO send to corresponding motor
+    def OnClick(self, Reset):
+
+        if Reset:
+            Reset()
+            
         print('Reset!')
 
 class SensorToggle(AnimatedToggle):
@@ -91,33 +101,6 @@ class SensorToggle(AnimatedToggle):
         super().__init__(checked_color="#FFB000",
             pulse_checked_color="#44FFB000")
         self.setFixedWidth(70)
-
-# could remove this if not important         
-class StopAllMotorsButton(QPushButton):
-    def __init__(self):
-        super().__init__(text="Stop and Reset Motors")
-        self.clicked.connect(self.OnClick)
-        
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: #eb4034;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-                max-width: 300px;
-            }
-            QPushButton:hover {
-                background-color: #99221a;
-            }
-        """)
-    
-        
-    def OnClick(self):
-        
-        # TODO
-        print('STOP!')
 
 # extra line
 def AddSep():
@@ -128,8 +111,6 @@ def AddSep():
 #### WIDGET CLASSES ####
 class RCMotorControls(QWidget):
     # Servo - SG92R TowerPro Micro servo
-    # Can rotate left or right 90 degrees (-90 to 90)
-    # TODO Reset position before moving
     
     def __init__(self):
         super().__init__()
@@ -148,7 +129,7 @@ class RCMotorControls(QWidget):
         select_lbl.setStyleSheet("font-size: 18px;")
         
         toggle = SensorToggle()
-        sensor_title = QLabel("Sensor Data:")
+        sensor_title = QLabel("Potentiometer Data:")
         self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
         
         sensor_layout.addWidget(select_lbl)
@@ -169,14 +150,14 @@ class RCMotorControls(QWidget):
         # GUI Controls
         
         ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("Select Angle (-90° to 90°)")
+        angle_select_lbl = QLabel("Select Angle (0° to 180°)")
         angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         angle_select_lbl.setMinimumWidth(400) # keep this constant for all
         
         # spinbox for servo angle
         angle_input = QSpinBox()
-        angle_input.setMinimum(-90)
-        angle_input.setMaximum(90)
+        angle_input.setMinimum(0)
+        angle_input.setMaximum(180)
         angle_input.setValue(0)
         angle_input.setSuffix('°')
         
@@ -188,7 +169,7 @@ class RCMotorControls(QWidget):
         
         # add button functionality
         inputs_to_read = [angle_input]
-        btn = UpdateButton(inputs_to_read)
+        btn = UpdateButton(inputs_to_read, UpdateRCServo)
         reset_btn = ResetButton()
         
         layout.addWidget(title)
@@ -208,7 +189,7 @@ class RCMotorControls(QWidget):
  
 class DCMotorControls(QWidget):
     # mrosnail 280 DC Motor
-    # 
+    
     def __init__(self):
         super().__init__()
         
@@ -217,53 +198,67 @@ class DCMotorControls(QWidget):
         # Page title
         title = QLabel("DC Motor Controls")
         title.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        title.setStyleSheet("font-size: 20px;")
+        title.setStyleSheet("font-size: 30px;")
+        
+        # Sensor controls (FOR DISPLAYING SENSOR DATA)
+        sensor_layout = QVBoxLayout()
+        select_lbl = QLabel("Activate Sensor Controls")
+        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        select_lbl.setStyleSheet("font-size: 18px;")
+        
+        toggle = SensorToggle()
+        sensor_title = QLabel("Sensor Data:")
+        self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
+        
+        sensor_layout.addWidget(select_lbl)
+        sensor_layout.addWidget(toggle)
+        sensor_layout.addWidget(sensor_title)
+        sensor_layout.addWidget(self.sensor_value)
+        sensor_layout.setContentsMargins(0, 20, 0, 20) 
         
         # DC motor: Using an encoder for position feedback and PID control, move the motor a user-selectable a) number of degrees from an initial position and b) desired velocity in either direction.
         
         # Layout for CONTROLS
         controls = QVBoxLayout()
-        
-        ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("Select Angle (0° to 360°)")
-        angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        angle_select_lbl.setMinimumWidth(400) # keep this constant for all
-        
-        angle_input = QLineEdit()
-        validator = QIntValidator(0, 360)  # Min 0, Max 360
-        angle_input.setValidator(validator)
-        angle_input.setPlaceholderText("Enter angle in degrees")
-        
+        controls_lbl = QLabel("User Controls")
+        controls_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        controls_lbl.setStyleSheet("font-size: 18px;")
         
         ###### SPEED SELECT ######
         speed_select_lbl = QLabel("Select Speed (1-20 rpm)")
         speed_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         speed_select_lbl.setMinimumWidth(400) # keep this constant for all
         
-        speed_input = QLineEdit()
-        sp_validator = QIntValidator(1, 20)  # Min 0, Max 360
-        speed_input.setValidator(sp_validator)
-        speed_input.setPlaceholderText("Enter velocity in RPM")
+        speed_input = QSpinBox()
+        speed_input.setMinimum(0)
+        speed_input.setMaximum(5)
+        speed_input.setValue(0)
         
-        # fill controls
-        controls.addWidget(angle_select_lbl)
-        controls.addWidget(angle_input)
-        
+        # fill controls widget
+        controls.addWidget(controls_lbl)
         controls.addWidget(speed_select_lbl)
         controls.addWidget(speed_input)
+        controls.setContentsMargins(0, 20, 0, 20)
         
         # add button functionality
-        inputs_to_read = [angle_input, speed_input]
+        inputs_to_read = [speed_input]
         btn = UpdateButton(inputs_to_read)
         reset_btn = ResetButton()
         
         layout.addWidget(title)
+        
+        layout.addLayout(sensor_layout)
+        layout.addWidget(AddSep())
         layout.addLayout(controls)
+        
         layout.addWidget(btn)
         layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
+    
+    def UpdateValue(self, value):
+        self.value_label.setText(f"Latest NNN: {value}")
  
 class StepperControls(QWidget):
     # ROHS Step Motor
@@ -276,15 +271,34 @@ class StepperControls(QWidget):
         # Page title
         title = QLabel("Stepper Motor Controls")
         title.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        title.setStyleSheet("font-size: 20px;")
+        title.setStyleSheet("font-size: 30px;")
+        
+        # Sensor controls (FOR DISPLAYING SENSOR DATA)
+        sensor_layout = QVBoxLayout()
+        select_lbl = QLabel("Activate Sensor Controls")
+        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        select_lbl.setStyleSheet("font-size: 18px;")
+        
+        toggle = SensorToggle()
+        sensor_title = QLabel("Sensor Data:")
+        self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
+        
+        sensor_layout.addWidget(select_lbl)
+        sensor_layout.addWidget(toggle)
+        sensor_layout.addWidget(sensor_title)
+        sensor_layout.addWidget(self.sensor_value)
+        sensor_layout.setContentsMargins(0, 20, 0, 20) 
         
         # Stepper motor: Move the motor a user-selectable number of degrees from an initial position in either direction.
         
         # Layout for CONTROLS
         controls = QVBoxLayout()
+        controls_lbl = QLabel("User Controls")
+        controls_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        controls_lbl.setStyleSheet("font-size: 18px;")
         
         ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("")
+        angle_select_lbl = QLabel("Select Angle")
         angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         angle_select_lbl.setMinimumWidth(400) # keep this constant for all
         
@@ -296,8 +310,10 @@ class StepperControls(QWidget):
         angle_input.setSuffix('°')
         
         # fill controls
+        controls.addWidget(controls_lbl)
         controls.addWidget(angle_select_lbl)
         controls.addWidget(angle_input)
+        controls.setContentsMargins(0, 20, 0, 20) 
         
         # add button functionality
         inputs = [angle_input]
@@ -306,12 +322,19 @@ class StepperControls(QWidget):
         
         # add all items to layout
         layout.addWidget(title)
+        
+        layout.addLayout(sensor_layout)
+        layout.addWidget(AddSep())
         layout.addLayout(controls)
+        
         layout.addWidget(btn)
         layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
+        
+    def UpdateValue(self, value):
+        self.value_label.setText(f"Latest NNN: {value}")
        
 # design the main window
 class MainInterface(QMainWindow):
@@ -337,21 +360,23 @@ class MainInterface(QMainWindow):
         motors_layout.addWidget(self.dc_ctrl)
         motors_layout.addWidget(self.stepper_ctrl)
         
-        # define global controls
-        stop_btn = StopAllMotorsButton()
-        
         # set central widget and layout
         central_widget = QWidget()
         main_layout = QVBoxLayout()
         
         main_layout.addWidget(global_title)
-        main_layout.addWidget(stop_btn)
         
         main_layout.addLayout(motors_layout)
         main_layout.addStretch()
         
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+        
+        # poll sensor readings
+        self.serial_timer = QTimer(self)
+        self.serial_timer.setInterval(50)
+        self.serial_timer.timeout.connect(self.PollSensors)
+        self.serial_timer.start()
 
     def PollSensors(self):
         # string parsing to get sensor data
@@ -366,11 +391,13 @@ class MainInterface(QMainWindow):
         # arduino outputs (distance,humidity,temperature,light)
         parts = [p.strip() for p in line.split(",")]
 
-        potent = parts[0]
-        self.rc_ctrl.UpdateValue(potent)
+        # parse the string
+        potent, light, dist = parts[0], parts[1], parts[2]
         
-        # self.dc_ctrl.UpdateValue(temperature, humidity)
-        # self.stepper_ctrl.UpdateValue(light)
+        # update sensor values
+        self.rc_ctrl.UpdateValue(potent)
+        self.dc_ctrl.UpdateValue(light)
+        self.stepper_ctrl.UpdateValue(dist)
         
 # run the app
 if __name__ == "__main__":

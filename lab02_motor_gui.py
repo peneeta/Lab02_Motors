@@ -18,7 +18,7 @@ from motor_comm import ResetRCServo, ResetDCMotor, ResetStepper
 # GLOBALS
 BAUD_RATE = 9600
 TIMEOUT = 0.05
-# arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
+arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
 
 #### BUTTON CLASSES ####
 class UpdateButton(QPushButton):
@@ -268,13 +268,13 @@ class DCMotorControls(QWidget):
         controls_lbl.setStyleSheet("font-size: 18px;")
         
         ###### SPEED SELECT ######
-        speed_select_lbl = QLabel("Select Speed (1-20 rpm)")
+        speed_select_lbl = QLabel("Select Speed (0-255)")
         speed_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         speed_select_lbl.setMinimumWidth(400) # keep this constant for all
         
         speed_input = QSpinBox()
         speed_input.setMinimum(0)
-        speed_input.setMaximum(5)
+        speed_input.setMaximum(255)
         speed_input.setValue(0)
         
         # fill controls widget
@@ -500,26 +500,26 @@ class MainInterface(QMainWindow):
         # self.serial_timer.timeout.connect(self.PollSensors)
         self.serial_timer.start()
 
-    # def PollSensors(self):
-    #     # string parsing to get sensor data
-    #     try:
-    #         line = arduino.readline().decode("utf-8", errors="ignore").strip()
-    #     except serial.SerialException:
-    #         return
+    def PollSensors(self):
+        # string parsing to get sensor data
+        try:
+            line = arduino.readline().decode("utf-8", errors="ignore").strip()
+        except serial.SerialException:
+            return
 
-    #     if not line:
-    #         return
+        if not line:
+            return
 
-    #     # arduino outputs (distance,humidity,temperature,light)
-    #     parts = [p.strip() for p in line.split(",")]
+        # arduino outputs (distance,humidity,temperature,light)
+        parts = [p.strip() for p in line.split(",")]
 
-    #     # parse the string
-    #     potent, light, dist = parts[0], parts[1], parts[2]
+        # parse the string
+        potent, light, dist = parts[0], parts[1], parts[2]
         
-    #     # update sensor values
-    #     self.rc_ctrl.UpdateValue(potent)
-    #     self.dc_ctrl.UpdateValue(light)
-    #     self.stepper_ctrl.UpdateValue(dist)
+        # update sensor values
+        self.rc_ctrl.UpdateValue(dist)
+        self.stepper_ctrl.UpdateValue(light)
+        self.dc_ctrl.UpdateValue(dist)
         
 # run the app
 if __name__ == "__main__":

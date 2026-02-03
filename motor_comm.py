@@ -13,7 +13,7 @@ def UpdateRCServo(angle, rc_serial=None):
     print("FORMATTED ANGLE", format_ang)
     
     if rc_serial:
-        rc_serial.write(f"{format_ang}\n".encode())
+        rc_serial.write(f"{format_ang}".encode())
         rc_serial.close()
         
 

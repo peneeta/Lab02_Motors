@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVB
 from qtwidgets import AnimatedToggle
 from PyQt5.QtGui import QIntValidator
 import sys
+from motor_comm import UpdateRCServo
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
 
@@ -90,7 +91,6 @@ class SensorToggle(AnimatedToggle):
             pulse_checked_color="#44FFB000")
         self.setFixedWidth(70)
 
-
 # could remove this if not important         
 class StopAllMotorsButton(QPushButton):
     def __init__(self):
@@ -148,10 +148,12 @@ class RCMotorControls(QWidget):
         
         toggle = SensorToggle()
         sensor_title = QLabel("Sensor Data:")
+        self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
         
         sensor_layout.addWidget(select_lbl)
         sensor_layout.addWidget(toggle)
         sensor_layout.addWidget(sensor_title)
+        sensor_layout.addWidget(self.sensor_value)
         sensor_layout.setContentsMargins(0, 20, 0, 20) 
         
         # (From Lab) RC servo motor: Move the motor to either of its extreme limit positions and to any position (in degrees) in between. If you choose to use a continuous rotation RC servo, be able to move the motor at any desired velocity (in RPM, rev/sec, degrees/sec, etc.) within the achievable range in either direction.
@@ -189,18 +191,20 @@ class RCMotorControls(QWidget):
         reset_btn = ResetButton()
         
         layout.addWidget(title)
-        layout.addWidget(AddSep())
         
         layout.addLayout(sensor_layout)
-        layout.addLayout(controls)
         layout.addWidget(AddSep())
+        layout.addLayout(controls)
         
         layout.addWidget(btn)
         layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
-      
+        
+    def UpdateValue(self, value):
+        self.value_label.setText(f"Latest NNN: {value}")
+ 
 class DCMotorControls(QWidget):
     # mrosnail 280 DC Motor
     # 
@@ -348,24 +352,25 @@ class MainInterface(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
-    # def poll_serial(self):
-    #     try:
-    #         line = arduino.readline().decode("utf-8", errors="ignore").strip()
-    #     except serial.SerialException:
-    #         return
+    def GetSensorData(self):
+        # string parsing to get sensor data
+        try:
+            line = arduino.readline().decode("utf-8", errors="ignore").strip()
+        except serial.SerialException:
+            return
 
-    #     if not line:
-    #         return
+        if not line:
+            return
 
-    #     # arduino outputs (distance,humidity,temperature,light)
-    #     parts = [p.strip() for p in line.split(",")]
-    #     if len(parts) < 4:
-    #         return
+        # arduino outputs (distance,humidity,temperature,light)
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 4:
+            return
 
-    #     distance, humidity, temperature, light = parts[0], parts[1], parts[2], parts[3]
-    #     self.s1_page.update_value(distance)
-    #     self.s2_page.update_value(temperature, humidity)
-    #     self.s3_page.update_value(light)
+        distance, humidity, temperature, light = parts[0], parts[1], parts[2], parts[3]
+        self.rc_ctrl.UpdateValue(distance)
+        # self.dc_ctrl.UpdateValue(temperature, humidity)
+        # self.stepper_ctrl.UpdateValue(light)
         
 # run the app
 if __name__ == "__main__":

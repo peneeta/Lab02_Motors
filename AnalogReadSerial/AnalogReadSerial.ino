@@ -1,3 +1,4 @@
+#include <Stepper.h>
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 #include <Servo.h>
@@ -7,6 +8,8 @@ const int echoPin = 10;
 const int lightPin = A0;
 const int potPin = A1;
 
+const int stepsPerRevolution = 2048;
+const int rpm = 5;
 const float light_threashold = 500;
 
 float duration, distance;
@@ -14,16 +17,23 @@ float duration, distance;
 Servo servo;
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *motor = AFMS.getMotor(2);
+Stepper stepper(stepsPerRevolution, 3, 5, 4, 6);
 
 void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   pinMode(lightPin, INPUT);
   pinMode(potPin, INPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+
   servo.attach(9);
   Serial.begin(9600);
   Serial.setTimeout(10);
   AFMS.begin();
+  stepper.setSpeed(rpm);
 }
 
 float getDistance() {
@@ -48,6 +58,11 @@ int getPot() {
   return analogRead(potPin);
 }
 
+void setDC(int speed) {
+  motor->setSpeed(speed);
+  motor->run(FORWARD);
+}
+
 void setMotors() {
   if (Serial.available() == 0) {
     return;
@@ -56,16 +71,21 @@ void setMotors() {
   int angle = Serial.parseInt();
   servo.write(angle);
 
-  int speed = Serial.parseInt();
-  motor->setSpeed(speed);
-  motor->run(FORWARD);
+  // int speed = Serial.parseInt();
+  // setDC(speed);
+
+  // int steps = Serial.parseInt();
+  // stepper.step(steps);
 }
 
 void loop() {
-
   int pot = getPot();
   float light = getLight();
   float distance = getDistance();
+
+  // servo.write(distance * 10);
+  // int dc = pot / (1023 / 255);
+  // setDC(dc);
 
   Serial.print(pot);
   Serial.print(",");
@@ -73,6 +93,7 @@ void loop() {
   Serial.print(",");
   Serial.print(distance);
   Serial.print("\n");
+
   setMotors();
 
   delay(100);

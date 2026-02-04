@@ -217,7 +217,7 @@ class DCMotorControls(QWidget):
         controls_lbl.setStyleSheet("font-size: 18px;")
         
         ###### SPEED SELECT ######
-        speed_select_lbl = QLabel("Select Speed (-255-255); negative values indicate opposite directionality")
+        speed_select_lbl = QLabel("Select Speed (0-255)")
         speed_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         speed_select_lbl.setMinimumWidth(400) # keep this constant for all
         
@@ -289,7 +289,7 @@ class StepperControls(QWidget):
         # spinbox for servo angle
         step_input = QSpinBox()
         step_input.setMinimum(0)
-        step_input.setMaximum(100)
+        step_input.setMaximum(1000)
         step_input.setValue(0)
         
         # fill controls
@@ -384,7 +384,7 @@ class MainInterface(QMainWindow):
         parts = [p.strip() for p in line.split(",")]
 
         # parse the string
-        light, potent, dist = parts[0], parts[1], parts[2]
+        potent, light, dist = parts[0], parts[1], parts[2]
         print(potent, light, dist)
         
         # rc = DIST
@@ -393,8 +393,8 @@ class MainInterface(QMainWindow):
         
         # update sensor values
         self.rc_ctrl.UpdateValue(dist)
-        self.stepper_ctrl.UpdateValue(potent)
-        self.dc_ctrl.UpdateValue(light)
+        self.stepper_ctrl.UpdateValue(light)
+        self.dc_ctrl.UpdateValue(potent)
 
 
 # run the app

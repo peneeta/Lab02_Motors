@@ -88,7 +88,6 @@ void setMotors() {
     // Servo command
     int angle = Serial.parseInt();
     servo.write(angle);
-
   }
   else if (motorID == 'D') {
     // DC Motor command
@@ -119,21 +118,18 @@ void loop() {
   setMotors();
 
   if (currentMode == SENSOR_MODE){
-    // update servo
     servo.write(distance * 10);
     int dc = pot / (1023 / 255);
+
     setDC(dc);
+
     if (light > 80) {
-      stepper.step(500);
+      stepper.step(200);
     }
-
-    // update dc  
-
-    // update stepper
   }
   
 
-  delay(100);
+  delay(70);
 }
 
 

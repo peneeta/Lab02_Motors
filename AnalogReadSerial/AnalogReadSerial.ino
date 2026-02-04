@@ -123,8 +123,11 @@ void loop() {
     servo.write(distance * 10);
     int dc = pot / (1023 / 255);
     setDC(dc);
+    if (light > 80) {
+      stepper.step(500);
+    }
 
-    // update dc
+    // update dc  
 
     // update stepper
   }

@@ -6,26 +6,21 @@ from PyQt5.QtGui import QIntValidator
 import sys
 
 # motor specific functions
-from motor_comm import UpdateRCServo
-from motor_comm import ResetRCServo, ResetDCMotor, ResetStepper
+from motor_comm import UpdateRCServo, UpdateDCMotor, UpdateStepper
+from motor_comm import ResetDCMotor
+from motor_comm import SetGUIMode, SetSensorMode
 
 # Lab 2: Motors - Mechatronic Design (Spring 2026)
-
-# TODO
-# need to pass the arduino in as an argument perhaps
-# need to do sensor toggle activities
 
 # GLOBALS
 BAUD_RATE = 9600
 TIMEOUT = 0.05
-arduino = serial.Serial(port="/dev/cu.usbmodem1101", baudrate=BAUD_RATE, timeout=TIMEOUT)
+arduino = serial.Serial(port="/dev/cu.usbmodem101", baudrate=BAUD_RATE, timeout=TIMEOUT)
 
 #### BUTTON CLASSES ####
 class UpdateButton(QPushButton):
     def __init__(self, input_widgets = None, send_to_motor_fn = None):
         '''
-        UpdateButton initialization
-        
         :param input_widgets: list of widgets to read text from
         :param send_to_motor_fn: function that sends data to the motor (define separate functions for each motor and then pass them into this update function)
         '''
@@ -51,6 +46,7 @@ class UpdateButton(QPushButton):
         self.send_to_motor_fn = send_to_motor_fn
     
     def OnClick(self):
+        # multiple update values just in case -- don't actually need this
         update_values = []
         
         # iterate over input widgets
@@ -63,7 +59,7 @@ class UpdateButton(QPushButton):
         
         # send to corresponding motor
         if self.send_to_motor_fn:
-            self.send_to_motor_fn(update_values)
+            self.send_to_motor_fn(update_values, arduino)
 
         return update_values
 
@@ -100,8 +96,16 @@ class SensorToggle(AnimatedToggle):
         super().__init__(checked_color="#FFB000",
             pulse_checked_color="#44FFB000")
         self.setFixedWidth(70)
-        
     
+    def ToggleSensorControls(self, state):
+        """Handle toggle state changes"""
+        if state == Qt.CheckState.Checked:
+            print("SENSORS ON")
+            SetSensorMode(arduino)
+        else:
+            print("GUI ON")
+            SetGUIMode(arduino)
+        
 # extra line
 def AddSep():
     line = QFrame()
@@ -124,16 +128,10 @@ class RCMotorControls(QWidget):
         
         # Sensor controls (FOR DISPLAYING SENSOR DATA)
         sensor_layout = QVBoxLayout()
-        select_lbl = QLabel("Activate Sensor Controls")
-        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        select_lbl.setStyleSheet("font-size: 18px;")
-        
-        toggle = SensorToggle()
-        sensor_title = QLabel("Potentiometer Data:")
+
+        sensor_title = QLabel("Sensor Data:")
         self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
         
-        sensor_layout.addWidget(select_lbl)
-        sensor_layout.addWidget(toggle)
         sensor_layout.addWidget(sensor_title)
         sensor_layout.addWidget(self.sensor_value)
         sensor_layout.setContentsMargins(0, 20, 0, 20) 
@@ -170,13 +168,6 @@ class RCMotorControls(QWidget):
         # add button functionality
         inputs_to_read = [angle_input]
         btn = UpdateButton(inputs_to_read, UpdateRCServo)
-        reset_btn = ResetButton(ResetRCServo)
-        
-        # add toggle functionality
-        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
-        
-        # Initialize button state (disabled when toggle is OFF)
-        btn.setEnabled(True)
         
         layout.addWidget(title)
         
@@ -185,50 +176,13 @@ class RCMotorControls(QWidget):
         layout.addLayout(controls)
         
         layout.addWidget(btn)
-        layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
         
     def UpdateValue(self, value):
-        self.value_label.setText(f"Latest NNN: {value}")
+        self.sensor_value.setText(f"Latest Distance Reading (cm): {value}")
         
-    def ResetMotor(self):
-        pass
-        
-    def ToggleSensorControls(self, state, button):
-        """Handle toggle state changes"""
-        if state == Qt.CheckState.Checked:
-            print("ON")
-            button.setEnabled(False)  # Disable button when toggle is ON
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #A0A0A0;;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-        """)
-        else:
-            print("OFF")
-            button.setEnabled(True)   # Enable button when toggle is OFF
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
-            # stop and reset the motor
-            ResetRCServo()
  
 class DCMotorControls(QWidget):
     # mrosnail 280 DC Motor
@@ -245,16 +199,10 @@ class DCMotorControls(QWidget):
         
         # Sensor controls (FOR DISPLAYING SENSOR DATA)
         sensor_layout = QVBoxLayout()
-        select_lbl = QLabel("Activate Sensor Controls")
-        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        select_lbl.setStyleSheet("font-size: 18px;")
         
-        toggle = SensorToggle()
         sensor_title = QLabel("Sensor Data:")
         self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
-        
-        sensor_layout.addWidget(select_lbl)
-        sensor_layout.addWidget(toggle)
+
         sensor_layout.addWidget(sensor_title)
         sensor_layout.addWidget(self.sensor_value)
         sensor_layout.setContentsMargins(0, 20, 0, 20) 
@@ -285,17 +233,10 @@ class DCMotorControls(QWidget):
         
         # add button functionality
         inputs_to_read = [speed_input]
-        btn = UpdateButton(inputs_to_read)
+        btn = UpdateButton(inputs_to_read, UpdateDCMotor)
         reset_btn = ResetButton(ResetDCMotor)
-        
-        # add toggle functionality
-        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
-        
-        # Initialize button state (disabled when toggle is OFF)
-        btn.setEnabled(True)
-        
+
         layout.addWidget(title)
-        
         layout.addLayout(sensor_layout)
         layout.addWidget(AddSep())
         layout.addLayout(controls)
@@ -307,41 +248,8 @@ class DCMotorControls(QWidget):
         self.setLayout(layout)
     
     def UpdateValue(self, value):
-        self.value_label.setText(f"Latest NNN: {value}")
-        
-    def ToggleSensorControls(self, state, button):
-        """Handle toggle state changes"""
-        if state == Qt.CheckState.Checked:
-            print("ON")
-            button.setEnabled(False)  # Disable button when toggle is ON
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #A0A0A0;;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-        """)
-        else:
-            print("OFF")
-            button.setEnabled(True)   # Enable button when toggle is OFF
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
-            # stop and reset the motor
-            ResetDCMotor()
+        self.sensor_value.setText(f"Latest Potentiometer Reading: {value}")
+
  
 class StepperControls(QWidget):
     # ROHS Step Motor
@@ -358,16 +266,9 @@ class StepperControls(QWidget):
         
         # Sensor controls (FOR DISPLAYING SENSOR DATA)
         sensor_layout = QVBoxLayout()
-        select_lbl = QLabel("Activate Sensor Controls")
-        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        select_lbl.setStyleSheet("font-size: 18px;")
-        
-        toggle = SensorToggle()
         sensor_title = QLabel("Sensor Data:")
         self.sensor_value = QLabel("No Reading Detected") # add data from the sensor
         
-        sensor_layout.addWidget(select_lbl)
-        sensor_layout.addWidget(toggle)
         sensor_layout.addWidget(sensor_title)
         sensor_layout.addWidget(self.sensor_value)
         sensor_layout.setContentsMargins(0, 20, 0, 20) 
@@ -380,35 +281,26 @@ class StepperControls(QWidget):
         controls_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         controls_lbl.setStyleSheet("font-size: 18px;")
         
-        ###### ANGLE SELECT ######
-        angle_select_lbl = QLabel("Select Angle")
-        angle_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        angle_select_lbl.setMinimumWidth(400) # keep this constant for all
+        step_select_lbl = QLabel("Select Step Count (0-100)")
+        step_select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        step_select_lbl.setMinimumWidth(400) # keep this constant for all
         
         # spinbox for servo angle
-        angle_input = QSpinBox()
-        angle_input.setMinimum(-360)
-        angle_input.setMaximum(360)
-        angle_input.setValue(0)
-        angle_input.setSuffix('°')
+        step_input = QSpinBox()
+        step_input.setMinimum(0)
+        step_input.setMaximum(100)
+        step_input.setValue(0)
         
         # fill controls
         controls.addWidget(controls_lbl)
-        controls.addWidget(angle_select_lbl)
-        controls.addWidget(angle_input)
+        controls.addWidget(step_select_lbl)
+        controls.addWidget(step_input)
         controls.setContentsMargins(0, 20, 0, 20) 
         
         # add button functionality
-        inputs = [angle_input]
-        btn = UpdateButton(inputs)
-        reset_btn = ResetButton(ResetStepper)
-        
-        # add toggle functionality
-        toggle.stateChanged.connect(lambda state: self.ToggleSensorControls(state, btn))
-        
-        # Initialize button state (disabled when toggle is OFF)
-        btn.setEnabled(True)
-        
+        inputs = [step_input]
+        btn = UpdateButton(inputs, UpdateStepper)
+    
         # add all items to layout
         layout.addWidget(title)
         
@@ -417,47 +309,14 @@ class StepperControls(QWidget):
         layout.addLayout(controls)
         
         layout.addWidget(btn)
-        layout.addWidget(reset_btn)
         layout.addStretch()
         
         self.setLayout(layout)
         
     def UpdateValue(self, value):
-        self.value_label.setText(f"Latest NNN: {value}")
+        self.sensor_value.setText(f"Latest Light Reading: {value}")
         
-    def ToggleSensorControls(self, state, button):
-        """Handle toggle state changes"""
-        if state == Qt.CheckState.Checked:
-            print("ON")
-            button.setEnabled(False)  # Disable button when toggle is ON
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #A0A0A0;;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-        """)
-        else:
-            print("OFF")
-            button.setEnabled(True)   # Enable button when toggle is OFF
-            button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: 1px solid white;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
-            ResetStepper()
-       
+
 # design the main window
 class MainInterface(QMainWindow):
     def __init__(self):
@@ -468,6 +327,14 @@ class MainInterface(QMainWindow):
         self.setWindowTitle("Lab 02 - Motors")
         global_title = QLabel("Lab 2 Sensors (Group 7)")
         global_title.setStyleSheet("font-size: 30px;")
+        
+        select_lbl = QLabel("Activate Sensor Controls")
+        select_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        select_lbl.setStyleSheet("font-size: 18px;")
+        toggle = SensorToggle()
+        
+        # add functionality to the toggle
+        toggle.stateChanged.connect(lambda state: toggle.ToggleSensorControls(state))
         
         # define widgets
         self.rc_ctrl = RCMotorControls()
@@ -487,7 +354,9 @@ class MainInterface(QMainWindow):
         main_layout = QVBoxLayout()
         
         main_layout.addWidget(global_title)
-        
+        main_layout.addWidget(select_lbl)
+        main_layout.addWidget(toggle)
+        main_layout.addWidget(AddSep())
         main_layout.addLayout(motors_layout)
         main_layout.addStretch()
         
@@ -497,7 +366,7 @@ class MainInterface(QMainWindow):
         # poll sensor readings
         self.serial_timer = QTimer(self)
         self.serial_timer.setInterval(50)
-        # self.serial_timer.timeout.connect(self.PollSensors)
+        self.serial_timer.timeout.connect(self.PollSensors)
         self.serial_timer.start()
 
     def PollSensors(self):
@@ -515,12 +384,18 @@ class MainInterface(QMainWindow):
 
         # parse the string
         potent, light, dist = parts[0], parts[1], parts[2]
+        print(potent, light, dist)
+        
+        # rc = DIST
+        # dc = potentiometer
+        # stepper = light
         
         # update sensor values
         self.rc_ctrl.UpdateValue(dist)
-        self.stepper_ctrl.UpdateValue(light)
-        self.dc_ctrl.UpdateValue(dist)
-        
+        self.stepper_ctrl.UpdateValue(potent)
+        self.dc_ctrl.UpdateValue(light)
+
+
 # run the app
 if __name__ == "__main__":
     app = QApplication(sys.argv)

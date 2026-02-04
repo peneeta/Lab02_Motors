@@ -19,6 +19,14 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *motor = AFMS.getMotor(2);
 Stepper stepper(stepsPerRevolution, 3, 5, 4, 6);
 
+// selection of sensor or GUI
+enum ControlMode {
+  SENSOR_MODE,
+  GUI_MODE
+};
+
+ControlMode currentMode = SENSOR_MODE;
+
 void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
@@ -68,14 +76,30 @@ void setMotors() {
     return;
   }
 
-  int angle = Serial.parseInt();
-  servo.write(angle);
+  // use char identifiers (see motor_comm.py)
+  char motorID = Serial.read();
 
-  // int speed = Serial.parseInt();
-  // setDC(speed);
+  // set each motor individually depending on packet
+  if (motorID == 'M') {
+    int mode = Serial.parseInt();
+    currentMode = (mode == 0)? SENSOR_MODE : GUI_MODE;
+  }
+  else if (motorID == 'S') {
+    // Servo command
+    int angle = Serial.parseInt();
+    servo.write(angle);
 
-  // int steps = Serial.parseInt();
-  // stepper.step(steps);
+  }
+  else if (motorID == 'D') {
+    // DC Motor command
+    int speed = Serial.parseInt();
+    setDC(speed);
+  }
+  else if (motorID == 'T') {
+    // Stepper command
+    int steps = Serial.parseInt();
+    stepper.step(steps);
+  }
 }
 
 void loop() {
@@ -83,10 +107,7 @@ void loop() {
   float light = getLight();
   float distance = getDistance();
 
-  // servo.write(distance * 10);
-  // int dc = pot / (1023 / 255);
-  // setDC(dc);
-
+  // print sensor data 
   Serial.print(pot);
   Serial.print(",");
   Serial.print(light);
@@ -94,7 +115,20 @@ void loop() {
   Serial.print(distance);
   Serial.print("\n");
 
+  // check if GUI or Sensor mode
   setMotors();
+
+  if (currentMode == SENSOR_MODE){
+    // update servo
+    servo.write(distance * 10);
+    int dc = pot / (1023 / 255);
+    setDC(dc);
+
+    // update dc
+
+    // update stepper
+  }
+  
 
   delay(100);
 }
